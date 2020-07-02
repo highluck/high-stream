@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+group 'lee.high'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.apache.kafka:kafka-clients:2.3.1"
+    compile "org.apache.kafka:kafka-streams:2.3.0"
+}
