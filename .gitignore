@@ -1,0 +1,20 @@
+*.class
+
+# Ignore Gradle project-specific cache directory
+.gradle
+.idea
+target
+
+# Ignore Gradle build output directory
+build
+gradle
+
+# Ignore user specific
+local.properties
+
+*/out/*
+
+*/package-lock.json
+
+**/package-lock.json
+.DS_Store

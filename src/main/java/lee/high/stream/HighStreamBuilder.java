@@ -13,7 +13,7 @@ public final class HighStreamBuilder<K, V> {
     private final String topic;
     private final String applicationId;
 
-    private HighStreamBuilder(final Properties properties,
+    private HighStreamBuilder(final StreamProperty streamProperty,
                               final String applicationId,
                               final long commitIntervalMs,
                               final Serde<K> keySerde,
@@ -21,16 +21,16 @@ public final class HighStreamBuilder<K, V> {
                               final String topic) {
         this.applicationId = applicationId;
         this.topic = topic;
+        properties = streamProperty.toProperty();
         properties.setProperty(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
         properties.setProperty(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, String.valueOf(commitIntervalMs));
         properties.setProperty(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, keySerde.getClass().getName());
         properties.setProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, valueSerde.getClass().getName());
-        this.properties = properties;
         this.keySerde = keySerde;
         this.valueSerde = valueSerde;
     }
 
-    public static <K1, V1> HighStreamBuilder<K1, V1> of(final Properties properties,
+    public static <K1, V1> HighStreamBuilder<K1, V1> of(final StreamProperty streamProperty,
                                                         final String applicationId,
                                                         final long commitIntervalMs,
                                                         final Class<K1> keyClass,
@@ -38,7 +38,7 @@ public final class HighStreamBuilder<K, V> {
                                                         final String topic) {
         final Serde<K1> keySerde = new KafkaSerde<>(keyClass);
         final Serde<V1> valueSerde = new KafkaSerde<>(valueClass);
-        return new HighStreamBuilder<>(properties,
+        return new HighStreamBuilder<>(streamProperty,
                                        applicationId,
                                        commitIntervalMs,
                                        keySerde,

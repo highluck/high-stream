@@ -3,7 +3,9 @@ package lee.high.stream;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Properties;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.utils.Bytes;
@@ -42,7 +44,7 @@ public final class HighStream<K, V> {
         this.applicationId = applicationId;
     }
 
-    public KafkaStreams streams(final Function<KStream<K, V>, KStream<K, V>> stream) {
+    public KafkaStreams streams(final Consumer<KStream<K, V>> stream) {
         final UncaughtExceptionHandler handler = (thread, exception) -> {
             // here you should examine the throwable/exception and perform an appropriate action!
         };
@@ -50,10 +52,10 @@ public final class HighStream<K, V> {
         return streams(stream, handler);
     }
 
-    public KafkaStreams streams(final Function<KStream<K, V>, KStream<K, V>> stream,
+    public KafkaStreams streams(final Consumer<KStream<K, V>> stream,
                                 final UncaughtExceptionHandler e) {
         final StreamsBuilder builder = new StreamsBuilder();
-        stream.apply(builder.stream(topic));
+        stream.accept(builder.stream(topic));
         final Topology topology = builder.build();
         System.out.println("Topology info = " + topology.describe());
         kafkaStreams = new KafkaStreams(topology, properties);
