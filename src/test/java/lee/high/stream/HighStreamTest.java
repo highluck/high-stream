@@ -2,18 +2,13 @@ package lee.high.stream;
 
 import java.time.Duration;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
-import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.SessionWindows;
-import org.apache.kafka.streams.kstream.Suppressed;
-import org.apache.kafka.streams.state.SessionStore;
 import org.junit.Test;
 
 public class HighStreamTest {
-    private final HighStream<Long, TestModel> highStream;
+    private final HighStream<Long, TestModel, Long, TestModel> highStream;
 
     public HighStreamTest() {
         final StreamProperty streamProperty = StreamProperty.of("localhost:9092",
@@ -26,6 +21,8 @@ public class HighStreamTest {
         highStream = HighStreamBuilder.of(streamProperty,
                                           "test",
                                           1000,
+                                          Long.class,
+                                          TestModel.class,
                                           Long.class,
                                           TestModel.class,
                                           "test-topic")

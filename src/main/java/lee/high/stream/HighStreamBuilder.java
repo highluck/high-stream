@@ -6,18 +6,20 @@ import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DeserializationExceptionHandler;
 
-public final class HighStreamBuilder<K, V> {
+public final class HighStreamBuilder<INK, INV, OUTK, OUTV> {
     private final Properties properties;
-    private final Serde<K> keySerde;
-    private final Serde<V> valueSerde;
+    private final Serde<OUTK> outKeySerde;
+    private final Serde<OUTV> outValueSerde;
     private final String topic;
     private final String applicationId;
 
     private HighStreamBuilder(final StreamProperty streamProperty,
                               final String applicationId,
                               final long commitIntervalMs,
-                              final Serde<K> keySerde,
-                              final Serde<V> valueSerde,
+                              final Serde<INK> keySerde,
+                              final Serde<INV> valueSerde,
+                              final Serde<OUTK> outKeySerde,
+                              final Serde<OUTV> outValueSerde,
                               final String topic) {
         this.applicationId = applicationId;
         this.topic = topic;
@@ -26,34 +28,40 @@ public final class HighStreamBuilder<K, V> {
         properties.setProperty(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, String.valueOf(commitIntervalMs));
         properties.setProperty(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, keySerde.getClass().getName());
         properties.setProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, valueSerde.getClass().getName());
-        this.keySerde = keySerde;
-        this.valueSerde = valueSerde;
+        this.outKeySerde = outKeySerde;
+        this.outValueSerde = outValueSerde;
     }
 
-    public static <K1, V1> HighStreamBuilder<K1, V1> of(final StreamProperty streamProperty,
-                                                        final String applicationId,
-                                                        final long commitIntervalMs,
-                                                        final Class<K1> keyClass,
-                                                        final Class<V1> valueClass,
-                                                        final String topic) {
-        final Serde<K1> keySerde = new KafkaSerde<>(keyClass);
-        final Serde<V1> valueSerde = new KafkaSerde<>(valueClass);
+    public static <INK1, INV1, OUTK1, OUTV1> HighStreamBuilder<INK1, INV1, OUTK1, OUTV1> of(final StreamProperty streamProperty,
+                                                                final String applicationId,
+                                                                final long commitIntervalMs,
+                                                                final Class<INK1> keyClass,
+                                                                final Class<INV1> valueClass,
+                                                                final Class<OUTK1> outKeyClass,
+                                                                final Class<OUTV1> outValueClass,
+                                                                final String topic) {
+        final Serde<INK1> keySerde = new KafkaSerde<>(keyClass);
+        final Serde<INV1> valueSerde = new KafkaSerde<>(valueClass);
+        final Serde<OUTK1> outKeySerde = new KafkaSerde<>(outKeyClass);
+        final Serde<OUTV1> outValueSerde = new KafkaSerde<>(outValueClass);
         return new HighStreamBuilder<>(streamProperty,
                                        applicationId,
                                        commitIntervalMs,
                                        keySerde,
                                        valueSerde,
+                                       outKeySerde,
+                                       outValueSerde,
                                        topic);
     }
 
-    public HighStreamBuilder<K, V> setDeserializationExceptionHandler(
+    public HighStreamBuilder<INK, INV, OUTK, OUTV> setDeserializationExceptionHandler(
             final Class<DeserializationExceptionHandler> deserializationExceptionHandler) {
         properties.setProperty(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
                                deserializationExceptionHandler.getName());
         return this;
     }
 
-    public HighStream<K, V> build() {
-        return new HighStream<>(properties, keySerde, valueSerde, topic, applicationId);
+    public HighStream<INK, INV, OUTK, OUTV> build() {
+        return new HighStream<>(properties, outKeySerde, outValueSerde, topic, applicationId);
     }
 }

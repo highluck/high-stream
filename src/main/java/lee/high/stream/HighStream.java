@@ -4,8 +4,6 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.utils.Bytes;
@@ -22,10 +20,10 @@ import org.apache.kafka.streams.state.Stores;
 import org.apache.kafka.streams.state.WindowBytesStoreSupplier;
 import org.apache.kafka.streams.state.WindowStore;
 
-public final class HighStream<K, V> {
+public final class HighStream<INK, INV, OUTK, OUTV> {
     private final Properties properties;
-    private final Serde<K> keySerde;
-    private final Serde<V> valueSerde;
+    private final Serde<OUTK> keySerde;
+    private final Serde<OUTV> valueSerde;
     private final String topic;
     private final String applicationId;
     private KafkaStreams kafkaStreams;
@@ -33,8 +31,8 @@ public final class HighStream<K, V> {
     private String suppressName;
 
     public HighStream(final Properties properties,
-                      final Serde<K> keySerde,
-                      final Serde<V> valueSerde,
+                      final Serde<OUTK> keySerde,
+                      final Serde<OUTV> valueSerde,
                       final String topic,
                       final String applicationId) {
         this.topic = topic;
@@ -44,7 +42,7 @@ public final class HighStream<K, V> {
         this.applicationId = applicationId;
     }
 
-    public KafkaStreams streams(final Consumer<KStream<K, V>> stream) {
+    public KafkaStreams streams(final Consumer<KStream<INK, INV>> stream) {
         final UncaughtExceptionHandler handler = (thread, exception) -> {
             // here you should examine the throwable/exception and perform an appropriate action!
         };
@@ -52,7 +50,7 @@ public final class HighStream<K, V> {
         return streams(stream, handler);
     }
 
-    public KafkaStreams streams(final Consumer<KStream<K, V>> stream,
+    public KafkaStreams streams(final Consumer<KStream<INK, INV>> stream,
                                 final UncaughtExceptionHandler e) {
         final StreamsBuilder builder = new StreamsBuilder();
         stream.accept(builder.stream(topic));
@@ -106,16 +104,16 @@ public final class HighStream<K, V> {
         return Stores.persistentSessionStore(storeName, windowTime);
     }
 
-    public Materialized<K, V, WindowStore<Bytes, byte[]>> windowStoreMaterialized(
+    public Materialized<OUTK, OUTV, WindowStore<Bytes, byte[]>> windowStoreMaterialized(
             final WindowBytesStoreSupplier store) {
-        return Materialized.<K, V>as(store)
+        return Materialized.<OUTK, OUTV>as(store)
                 .withKeySerde(keySerde)
                 .withValueSerde(valueSerde);
     }
 
-    public Materialized<K, V, SessionStore<Bytes, byte[]>> sessionStoreMaterialized(
+    public Materialized<OUTK, OUTV, SessionStore<Bytes, byte[]>> sessionStoreMaterialized(
             final SessionBytesStoreSupplier store) {
-        return Materialized.<K, V>as(store)
+        return Materialized.<OUTK, OUTV>as(store)
                 .withKeySerde(keySerde)
                 .withValueSerde(valueSerde);
     }
