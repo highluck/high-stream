@@ -1,13 +1,14 @@
 *.class
 
 # Ignore Gradle project-specific cache directory
-.gradle
+*.gradle
 .idea
 target
 
 # Ignore Gradle build output directory
 build
 gradle
+.gradle
 
 # Ignore user specific
 local.properties

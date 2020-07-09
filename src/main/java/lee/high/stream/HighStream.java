@@ -1,146 +1,23 @@
 package lee.high.stream;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.time.Duration;
-import java.util.Properties;
 import java.util.function.Consumer;
 
-import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.common.utils.Bytes;
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.Suppressed;
-import org.apache.kafka.streams.kstream.Windowed;
-import org.apache.kafka.streams.state.SessionBytesStoreSupplier;
-import org.apache.kafka.streams.state.SessionStore;
-import org.apache.kafka.streams.state.Stores;
-import org.apache.kafka.streams.state.WindowBytesStoreSupplier;
-import org.apache.kafka.streams.state.WindowStore;
 
-public final class HighStream<INK, INV, OUTK, OUTV> {
-    private final Properties properties;
-    private final Serde<OUTK> keySerde;
-    private final Serde<OUTV> valueSerde;
-    private final String topic;
-    private final String applicationId;
-    private KafkaStreams kafkaStreams;
-    private String storeName;
-    private String suppressName;
+import lee.high.stream.model.KafkaStreamsOperation;
 
-    public HighStream(final Properties properties,
-                      final Serde<OUTK> keySerde,
-                      final Serde<OUTV> valueSerde,
-                      final String topic,
-                      final String applicationId) {
-        this.topic = topic;
-        this.properties = properties;
-        this.keySerde = keySerde;
-        this.valueSerde = valueSerde;
-        this.applicationId = applicationId;
-    }
+public interface HighStream<INK, INV, OUTK, OUTV> {
+    KafkaStreamsOperation streams(final Consumer<KStream<INK, INV>> stream);
 
-    public KafkaStreams streams(final Consumer<KStream<INK, INV>> stream) {
-        final UncaughtExceptionHandler handler = (thread, exception) -> {
-            // here you should examine the throwable/exception and perform an appropriate action!
-        };
+    KafkaStreamsOperation streams(final Consumer<KStream<INK, INV>> stream,
+                                  final UncaughtExceptionHandler e);
 
-        return streams(stream, handler);
-    }
+    String topic();
 
-    public KafkaStreams streams(final Consumer<KStream<INK, INV>> stream,
-                                final UncaughtExceptionHandler e) {
-        final StreamsBuilder builder = new StreamsBuilder();
-        stream.accept(builder.stream(topic));
-        final Topology topology = builder.build();
-        System.out.println("Topology info = " + topology.describe());
-        kafkaStreams = new KafkaStreams(topology, properties);
-        kafkaStreams.setUncaughtExceptionHandler(e);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> kafkaStreams.close()));
-        return kafkaStreams;
-    }
+    HighWindowStore store();
 
-    public WindowBytesStoreSupplier inMemoryWindowStore(final Duration windowTime) {
-        return inMemoryWindowStore(topic + "-store", windowTime);
-    }
+    HighWindowSuppressed suppressed();
 
-    public WindowBytesStoreSupplier inMemoryWindowStore(final String storeName, final Duration windowTime) {
-        this.storeName = storeName;
-        return Stores.inMemoryWindowStore(storeName,
-                                          windowTime,
-                                          windowTime,
-                                          false);
-    }
-
-    public WindowBytesStoreSupplier windowStore(final Duration windowTime) {
-        return windowStore(topic + "-store", windowTime);
-    }
-
-    public WindowBytesStoreSupplier windowStore(final String storeName, final Duration windowTime) {
-        this.storeName = storeName;
-        return Stores.persistentWindowStore(storeName,
-                                            windowTime,
-                                            windowTime,
-                                            false);
-    }
-
-    public SessionBytesStoreSupplier inMemorySessionStore(final Duration windowTime) {
-        return inMemorySessionStore(topic + "-store", windowTime);
-    }
-
-    public SessionBytesStoreSupplier inMemorySessionStore(final String storeName, Duration windowTime) {
-        this.storeName = storeName;
-        return Stores.inMemorySessionStore(storeName, windowTime);
-    }
-
-    public SessionBytesStoreSupplier sessionStore(final Duration windowTime) {
-        return sessionStore(topic + "-store", windowTime);
-    }
-
-    public SessionBytesStoreSupplier sessionStore(final String storeName, final Duration windowTime) {
-        this.storeName = storeName;
-        return Stores.persistentSessionStore(storeName, windowTime);
-    }
-
-    public Materialized<OUTK, OUTV, WindowStore<Bytes, byte[]>> windowStoreMaterialized(
-            final WindowBytesStoreSupplier store) {
-        return Materialized.<OUTK, OUTV>as(store)
-                .withKeySerde(keySerde)
-                .withValueSerde(valueSerde);
-    }
-
-    public Materialized<OUTK, OUTV, SessionStore<Bytes, byte[]>> sessionStoreMaterialized(
-            final SessionBytesStoreSupplier store) {
-        return Materialized.<OUTK, OUTV>as(store)
-                .withKeySerde(keySerde)
-                .withValueSerde(valueSerde);
-    }
-
-    public Suppressed<Windowed> suppressed(final String suppressName) {
-        this.suppressName = suppressName;
-        return Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded())
-                         .withName(suppressName);
-    }
-
-    public Suppressed<Windowed> suppressed() {
-        return suppressed(topic + "-suppress");
-    }
-
-    public String topic() {
-        return topic;
-    }
-
-    public String changeLog() {
-        return String.format("%s-%s-changelog", applicationId, storeName);
-    }
-
-    public String repartition() {
-        return String.format("%s-%s-repartition", applicationId, storeName);
-    }
-
-    public String suppress() {
-        return String.format("%s-%s-store-changelog", applicationId, suppressName);
-    }
+    HighMaterialized<OUTK, OUTV> materialized();
 }

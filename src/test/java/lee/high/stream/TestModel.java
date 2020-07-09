@@ -6,6 +6,11 @@ public class TestModel {
 
     TestModel() {}
 
+    public TestModel(final long id, final String value) {
+        this.id = id;
+        this.value = value;
+    }
+
     public long getId() {
         return id;
     }
