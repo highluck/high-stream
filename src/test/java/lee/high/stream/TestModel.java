@@ -18,4 +18,12 @@ public class TestModel {
     public String getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "TestModel{" +
+                "id=" + id +
+                ", value='" + value + '\'' +
+                '}';
+    }
 }

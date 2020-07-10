@@ -1,37 +1,48 @@
 package lee.high.stream;
 
-import java.time.Duration;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
-
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.SessionWindows;
-import org.junit.Test;
-
+import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
+import com.salesforce.kafka.test.listeners.PlainListener;
 import lee.high.stream.model.KafkaStreamsOperation;
 import lee.high.stream.model.KeyValueSerde;
 import lee.high.stream.model.StreamProperty;
 import lee.high.stream.serializers.KafkaSerializer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.SessionWindows;
+import org.apache.kafka.streams.kstream.Suppressed;
+import org.apache.kafka.streams.kstream.TimeWindows;
+import org.junit.ClassRule;
+import org.junit.Test;
 
-import static java.util.Objects.requireNonNull;
-import static org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
-import static org.junit.Assert.assertEquals;
+import java.time.Duration;
+import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.apache.kafka.clients.producer.ProducerConfig.*;
 import static org.junit.Assert.assertTrue;
 
 public class HighStreamImplTest {
+    private static final Pattern COMPILE = Pattern.compile("PLAINTEXT://", Pattern.LITERAL);
     private final HighStream<Long, TestModel, Long, TestModel> highStream;
     private final KafkaProducer<Long, TestModel> kafkaProducer;
-    private final String topic = "test-topic";
-//latest
+    private final String topic = "test-top6";
+//    @ClassRule
+//    public static SharedKafkaTestResource sharedKafkaTestResource = new SharedKafkaTestResource()
+//            .registerListener(new PlainListener().onPorts(9092))
+//            .withBrokers(1);
+
+    //latest
     public HighStreamImplTest() {
         final Properties properties = new Properties();
+//        properties.setProperty(BOOTSTRAP_SERVERS_CONFIG, COMPILE.matcher(sharedKafkaTestResource.getKafkaConnectString())
+//                .replaceAll(Matcher.quoteReplacement("")));
         properties.setProperty(BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         properties.setProperty(ACKS_CONFIG, "1");
         properties.setProperty(KEY_SERIALIZER_CLASS_CONFIG, KafkaSerializer.class.getName());
@@ -39,22 +50,22 @@ public class HighStreamImplTest {
         kafkaProducer = new KafkaProducer<>(properties);
 
         final StreamProperty streamProperty = StreamProperty.of("localhost:9092",
-                                                                "test-stream",
-                                                                "earliest",
-                                                                "/Users/high/high-stream",
-                                                                10,
-                                                                1);
+                "test-s4",
+                "latest",
+                "/Users/high/high-stream",
+                10,
+                1);
 
         highStream = HighStreamBuilder.of(streamProperty,
-                                          "test",
-                                          1000,
-                                          KeyValueSerde.of(Long.class, TestModel.class),
-                                          KeyValueSerde.of(Long.class, TestModel.class),
-                                          topic)
-                                      .build();
+                "test6",
+                2000,
+                KeyValueSerde.of(Long.class, TestModel.class),
+                KeyValueSerde.of(Long.class, TestModel.class),
+                topic)
+                .build();
     }
 
-//    @Test
+    @Test
     public void 테스트() {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         final HighWindowStore store = highStream.store();
@@ -63,52 +74,79 @@ public class HighStreamImplTest {
         final Consumer<KStream<Long, TestModel>> streamKStream =
                 stream -> stream
                         .groupByKey()
-                        .windowedBy(SessionWindows.with(Duration.ofSeconds(1)))
-                        .aggregate(TestModel::new,
-                                   (key, value, aggregate) -> {
-                            System.out.println("xxxxxx" + aggregate);
-                                        return value;
-                                   },
-                                   (key, aggOne, aggTwo) -> {
-                                       System.out.println("xxxxxx" + aggOne.getValue());
-                                            return aggOne;
-                                   },
-                                   highStream.materialized()
-                                             .as(store.sessionStore(Duration.ofSeconds(1)))
-                                             .withLoggingDisabled())
-                        .suppress(suppressed.untilWindowCloses())
+                        .windowedBy(SessionWindows.with(Duration.ofSeconds(5))
+                                .grace(Duration.ofSeconds(5)))
+                        .reduce((v1, v2) -> v1,
+                                highStream.materialized()
+                                        .as(store.inMemorySessionStore(Duration.ofSeconds(5)))
+                                        .withLoggingDisabled())
+
+//                        .aggregate(TestModel::new,
+//                                (key, value, aggregate) -> {
+////                                    System.out.println("xxxxxx" + value);
+//                                    return aggregate;
+//                                },
+//                                (key, aggOne, aggTwo) -> {
+////                                    System.out.println("xxxxxx" + aggTwo.getValue());
+//                                    return aggOne;
+//                                },
+//                                highStream.materialized()
+//                                        .as(store.inMemorySessionStore(Duration.ofSeconds(5)))
+//                                        .withLoggingDisabled())
+                        .suppress(highStream.suppressed().untilTimeLimit(Duration.ofSeconds(5)))
                         .toStream()
-                        .peek((k, v) -> {
-                            System.out.println("xxxxx" + v.getValue());
-                            countDownLatch.countDown();
-                        })
-                        .to("test-out");
+                        .foreach((k, v) -> {
+                            System.out.println("result : " + k.key() + " : " + k.window().end());
+//                            countDownLatch.countDown();
+                        });
 
         final KafkaStreamsOperation operation = highStream.streams(streamKStream);
         final String description = operation.topology().describe().toString();
 
         System.out.println("change : " + store.changeLog());
         assertTrue(description.contains(highStream.topic()));
-        assertTrue(description.contains("test-topic-suppress-store"));
+//        assertTrue(description.contains("test-top-suppress-store"));
         operation.kafkaStreams().start();
 
-        final ProducerRecord<Long, TestModel> record = new ProducerRecord<>(topic, 1L, new TestModel(1, "dasdsa"));
-        kafkaProducer.send(record, (metadata, exception) -> {
-            if (exception != null) {
-                System.out.println("send fail!" + exception);
+        while (true) {
+            send(new ProducerRecord<>(topic, 1L, new TestModel(1, "dasdsa")));
+            try {
+                Thread.sleep(1002);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        });
-
-        kafkaProducer.send(record, (metadata, exception) -> {
-            if (exception != null) {
-                System.out.println("send fail!" + exception);
+            send(new ProducerRecord<>(topic, 2L, new TestModel(2, "dasdsa")));
+//
+////            try {
+////                Thread.sleep(10000);
+////            } catch (InterruptedException e) {
+////                e.printStackTrace();
+////            }
+//            send(new ProducerRecord<>(topic, 2L, new TestModel(3, "222222")));
+//            CompletableFuture.supplyAsync(() -> {
+//                send(new ProducerRecord<>(topic, 2L, new TestModel(2, "222222")));
+//                send(new ProducerRecord<>(topic, 2L, new TestModel(1, "222222")));
+//                send(new ProducerRecord<>(topic, 2L, new TestModel(5, "dasdsa")));
+//                return true;
+//            });
+            try {
+                Thread.sleep(1002);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        });
-
-        try {
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
+//            try {
+//                countDownLatch.await();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+    }
+
+    public void send(ProducerRecord<Long, TestModel> record) {
+        kafkaProducer.send(record, (metadata, exception) -> {
+            if (exception != null) {
+                System.out.println("send fail!" + exception);
+            }
+        });
     }
 }
