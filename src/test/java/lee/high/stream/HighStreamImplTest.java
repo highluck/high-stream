@@ -32,7 +32,7 @@ public class HighStreamImplTest {
     private static final Pattern COMPILE = Pattern.compile("PLAINTEXT://", Pattern.LITERAL);
     private final HighStream<Long, TestModel, Long, TestModel> highStream;
     private final KafkaProducer<Long, TestModel> kafkaProducer;
-    private final String topic = "test-top6";
+    private final String topic = "test-top7";
 //    @ClassRule
 //    public static SharedKafkaTestResource sharedKafkaTestResource = new SharedKafkaTestResource()
 //            .registerListener(new PlainListener().onPorts(9092))
@@ -50,7 +50,7 @@ public class HighStreamImplTest {
         kafkaProducer = new KafkaProducer<>(properties);
 
         final StreamProperty streamProperty = StreamProperty.of("localhost:9092",
-                "test-s4",
+                "test-s7",
                 "latest",
                 "/Users/high/high-stream",
                 10,
@@ -73,12 +73,13 @@ public class HighStreamImplTest {
 
         final Consumer<KStream<Long, TestModel>> streamKStream =
                 stream -> stream
+//                        .peek((k, v) -> System.out.println("xxxxxxxx " + v))
                         .groupByKey()
-                        .windowedBy(SessionWindows.with(Duration.ofSeconds(5))
-                                .grace(Duration.ofSeconds(5)))
-                        .reduce((v1, v2) -> v1,
+                        .windowedBy(SessionWindows.with(Duration.ofSeconds(5000))
+                                .grace(Duration.ofSeconds(5000)))
+                        .reduce((v1, v2) -> v2,
                                 highStream.materialized()
-                                        .as(store.inMemorySessionStore(Duration.ofSeconds(5)))
+                                        .as(store.inMemorySessionStore(Duration.ofSeconds(5000)))
                                         .withLoggingDisabled())
 
 //                        .aggregate(TestModel::new,
@@ -93,10 +94,11 @@ public class HighStreamImplTest {
 //                                highStream.materialized()
 //                                        .as(store.inMemorySessionStore(Duration.ofSeconds(5)))
 //                                        .withLoggingDisabled())
-                        .suppress(highStream.suppressed().untilTimeLimit(Duration.ofSeconds(5)))
+//                        .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(5),
+//                                Suppressed.BufferConfig.maxRecords(2)))
                         .toStream()
                         .foreach((k, v) -> {
-                            System.out.println("result : " + k.key() + " : " + k.window().end());
+                            System.out.println("result : " + v + " : " + k.key());
 //                            countDownLatch.countDown();
                         });
 
@@ -107,28 +109,51 @@ public class HighStreamImplTest {
         assertTrue(description.contains(highStream.topic()));
 //        assertTrue(description.contains("test-top-suppress-store"));
         operation.kafkaStreams().start();
+//
+//        send(new ProducerRecord<>(topic, 1L, new TestModel(1, "dasdsa")));
+//        try {
+//            Thread.sleep(1002);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        send(new ProducerRecord<>(topic, 2L, new TestModel(2, "dasdsa")));
+//        send(new ProducerRecord<>(topic, 1L, new TestModel(3, "dasdsa")));
+//        try {
+//            Thread.sleep(1002);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        send(new ProducerRecord<>(topic, 2L, new TestModel(4, "dasdsa")));
+//        send(new ProducerRecord<>(topic, 1L, new TestModel(5, "dasdsa")));
+//        try {
+//            Thread.sleep(1002);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        send(new ProducerRecord<>(topic, 2L, new TestModel(6, "dasdsa")));
 
+        int count = 7;
         while (true) {
-            send(new ProducerRecord<>(topic, 1L, new TestModel(1, "dasdsa")));
+            send(new ProducerRecord<>(topic, 1L, new TestModel(count++, "dasdsa")));
             try {
                 Thread.sleep(1002);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            send(new ProducerRecord<>(topic, 2L, new TestModel(2, "dasdsa")));
-//
-////            try {
-////                Thread.sleep(10000);
-////            } catch (InterruptedException e) {
-////                e.printStackTrace();
-////            }
-//            send(new ProducerRecord<>(topic, 2L, new TestModel(3, "222222")));
-//            CompletableFuture.supplyAsync(() -> {
-//                send(new ProducerRecord<>(topic, 2L, new TestModel(2, "222222")));
-//                send(new ProducerRecord<>(topic, 2L, new TestModel(1, "222222")));
-//                send(new ProducerRecord<>(topic, 2L, new TestModel(5, "dasdsa")));
-//                return true;
-//            });
+            send(new ProducerRecord<>(topic, 2L, new TestModel(count++, "dasdsa")));
+
+//            try {
+//                Thread.sleep(10000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+            send(new ProducerRecord<>(topic, 2L, new TestModel(count++, "222222")));
+            CompletableFuture.supplyAsync(() -> {
+                send(new ProducerRecord<>(topic, 2L, new TestModel(99999, "222222")));
+                send(new ProducerRecord<>(topic, 2L, new TestModel(19999, "222222")));
+                send(new ProducerRecord<>(topic, 2L, new TestModel(59999, "dasdsa")));
+                return true;
+            });
             try {
                 Thread.sleep(1002);
             } catch (InterruptedException e) {

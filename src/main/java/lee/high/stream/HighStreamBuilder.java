@@ -2,14 +2,13 @@ package lee.high.stream;
 
 import java.util.Properties;
 
+import lee.high.stream.serializers.KafkaSerde;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DeserializationExceptionHandler;
 
 import lee.high.stream.internal.HighStreamImpl;
 import lee.high.stream.model.KeyValueSerde;
-import lee.high.stream.model.KeyValueSerde.KeySerde;
-import lee.high.stream.model.KeyValueSerde.ValueSerde;
 import lee.high.stream.model.StreamProperty;
 
 public final class HighStreamBuilder<INK, INV, OUTK, OUTV> {
@@ -18,8 +17,8 @@ public final class HighStreamBuilder<INK, INV, OUTK, OUTV> {
     private final Serde<OUTV> outValueSerde;
     private final String topic;
     private final String applicationId;
-    private static Class inKClass;
-    private static Class inVClass;
+    private static Class keyClass;
+    private static Class valueClass;
 
     private HighStreamBuilder(final StreamProperty streamProperty,
                               final String applicationId,
@@ -29,15 +28,27 @@ public final class HighStreamBuilder<INK, INV, OUTK, OUTV> {
                               final String topic) {
         this.applicationId = applicationId;
         this.topic = topic;
-        inKClass = inKeyValueSerde.keyClass();
-        inVClass = inKeyValueSerde.valueClass();
         outKeySerde = outKeyValueSerde.keySerde();
         outValueSerde = outKeyValueSerde.valueSerde();
         properties = streamProperty.toProperty();
+        keyClass = inKeyValueSerde.keyClass();
+        valueClass = inKeyValueSerde.valueClass();
         properties.setProperty(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
         properties.setProperty(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, String.valueOf(commitIntervalMs));
         properties.setProperty(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, KeySerde.class.getName());
         properties.setProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, ValueSerde.class.getName());
+    }
+
+    public static class KeySerde extends KafkaSerde {
+        public KeySerde() {
+            super(keyClass);
+        }
+    }
+
+    public static class ValueSerde extends KafkaSerde {
+        public ValueSerde() {
+            super(valueClass);
+        }
     }
 
     public static <INK1, INV1, OUTK1, OUTV1> HighStreamBuilder<INK1, INV1, OUTK1, OUTV1> of(

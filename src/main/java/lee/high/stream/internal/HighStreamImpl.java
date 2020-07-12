@@ -4,6 +4,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Properties;
 import java.util.function.Consumer;
 
+import lee.high.stream.errors.StreamDeserializationExceptionHandler;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -15,8 +16,12 @@ import lee.high.stream.HighWindowStore;
 import lee.high.stream.HighWindowSuppressed;
 import lee.high.stream.model.KafkaStreamsOperation;
 import lee.high.stream.HighMaterialized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class HighStreamImpl<INK, INV, OUTK, OUTV> implements HighStream<INK, INV, OUTK, OUTV> {
+    private static final Logger log = LoggerFactory.getLogger(HighStream.class);
+
     private final Properties properties;
     private final Serde<OUTK> outKeySerde;
     private final Serde<OUTV> outValueSerde;
@@ -53,11 +58,12 @@ public final class HighStreamImpl<INK, INV, OUTK, OUTV> implements HighStream<IN
         final Topology topology = builder.build();
         kafkaStreams = new KafkaStreams(topology, properties);
         kafkaStreams.setUncaughtExceptionHandler(e);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> kafkaStreams.close()));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("program shutdown kafka close.");
+            kafkaStreams.close();
+        }));
         return KafkaStreamsOperation.of(kafkaStreams, topology);
     }
-
-
 
     @Override
     public String topic() {

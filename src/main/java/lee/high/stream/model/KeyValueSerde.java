@@ -5,8 +5,8 @@ import org.apache.kafka.common.serialization.Serde;
 import lee.high.stream.serializers.KafkaSerde;
 
 public final class KeyValueSerde<K, V> {
-    private static Class keyClass;
-    private static Class valueClass;
+    private final Class<K> keyClass;
+    private final Class<V> valueClass;
     private final Serde<K> keySerde;
     private final Serde<V> valueSerde;
 
@@ -37,17 +37,5 @@ public final class KeyValueSerde<K, V> {
 
     public Class<V> valueClass() {
         return valueClass;
-    }
-
-    public static class KeySerde extends KafkaSerde {
-        public KeySerde() {
-            super(keyClass);
-        }
-    }
-
-    public static class ValueSerde extends KafkaSerde {
-        public ValueSerde() {
-            super(valueClass);
-        }
     }
 }

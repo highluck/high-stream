@@ -8,7 +8,6 @@ target
 # Ignore Gradle build output directory
 build
 gradle
-.gradle
 
 # Ignore user specific
 local.properties
