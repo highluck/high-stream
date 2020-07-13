@@ -4,12 +4,10 @@ import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
 
 public final class StreamProperty {
     private final String bootstrapServers;
-    private final String applicationId;
     private final String autoOffsetReset;
     private final String stateStore;
     private final int maxPollRecords;
@@ -17,13 +15,11 @@ public final class StreamProperty {
     private int sessionTimeoutMs;
 
     private StreamProperty(final String bootstrapServers,
-                           final String applicationId,
                            final String autoOffsetReset,
                            final String stateStore,
                            final int maxPollRecords,
                            final int threadCount) {
         this.bootstrapServers = bootstrapServers;
-        this.applicationId = applicationId;
         this.autoOffsetReset = autoOffsetReset;
         this.maxPollRecords = maxPollRecords;
         this.stateStore = stateStore;
@@ -31,13 +27,11 @@ public final class StreamProperty {
     }
 
     public static StreamProperty of(final String bootstrapServers,
-                                    final String groupId,
                                     final String autoOffsetReset,
                                     final String stateStore,
                                     final int maxPollRecords,
                                     final int threadCount) {
         return new StreamProperty(bootstrapServers,
-                                  groupId,
                                   autoOffsetReset,
                                   stateStore,
                                   maxPollRecords,
@@ -52,7 +46,6 @@ public final class StreamProperty {
     public Properties toProperty() {
         final Properties props = new Properties();
         props.setProperty(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.setProperty(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
         props.setProperty(StreamsConfig.NUM_STREAM_THREADS_CONFIG, String.valueOf(threadCount));
         props.setProperty(StreamsConfig.STATE_DIR_CONFIG, stateStore);
         props.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, String.valueOf(maxPollRecords));

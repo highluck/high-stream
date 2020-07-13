@@ -1,20 +1,13 @@
 package lee.high.stream;
 
-import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
-import com.salesforce.kafka.test.listeners.PlainListener;
 import lee.high.stream.model.KafkaStreamsOperation;
 import lee.high.stream.model.KeyValueSerde;
 import lee.high.stream.model.StreamProperty;
 import lee.high.stream.serializers.KafkaSerializer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.SessionWindows;
-import org.apache.kafka.streams.kstream.Suppressed;
-import org.apache.kafka.streams.kstream.TimeWindows;
-import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -22,7 +15,6 @@ import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.kafka.clients.producer.ProducerConfig.*;
@@ -50,7 +42,6 @@ public class HighStreamImplTest {
         kafkaProducer = new KafkaProducer<>(properties);
 
         final StreamProperty streamProperty = StreamProperty.of("localhost:9092",
-                "test-s7",
                 "latest",
                 "/Users/high/high-stream",
                 10,
