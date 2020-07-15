@@ -1,5 +1,6 @@
 package lee.high.stream;
 
+import com.google.common.collect.Lists;
 import lee.high.stream.model.KafkaStreamsOperation;
 import lee.high.stream.model.KeyValueSerde;
 import lee.high.stream.model.StreamProperty;
@@ -11,6 +12,7 @@ import org.apache.kafka.streams.kstream.SessionWindows;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -92,7 +94,6 @@ public class HighStreamImplTest {
                             System.out.println("result : " + v + " : " + k.key());
 //                            countDownLatch.countDown();
                         });
-
         final KafkaStreamsOperation operation = highStream.streams(streamKStream);
         final String description = operation.topology().describe().toString();
 
