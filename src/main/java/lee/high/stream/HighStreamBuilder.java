@@ -39,24 +39,24 @@ public final class HighStreamBuilder<INK, INV, OUTK, OUTV> {
         properties.setProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, ValueSerde.class.getName());
     }
 
-    public static class KeySerde extends KafkaSerde {
+    public static class KeySerde<INK> extends KafkaSerde<INK> {
         public KeySerde() {
             super(keyClass);
         }
     }
 
-    public static class ValueSerde extends KafkaSerde {
+    public static class ValueSerde<INV> extends KafkaSerde<INV> {
         public ValueSerde() {
             super(valueClass);
         }
     }
 
-    public static <INK1, INV1, OUTK1, OUTV1> HighStreamBuilder<INK1, INV1, OUTK1, OUTV1> of(
+    public static <INK, INV, OUTK, OUTV> HighStreamBuilder<INK, INV, OUTK, OUTV> of(
             final StreamProperty streamProperty,
             final String applicationId,
             final long commitIntervalMs,
-            final KeyValueSerde<INK1, INV1> inKeyValueSerde,
-            final KeyValueSerde<OUTK1, OUTV1> outKeyValueSerde,
+            final KeyValueSerde<INK, INV> inKeyValueSerde,
+            final KeyValueSerde<OUTK, OUTV> outKeyValueSerde,
             final String topic) {
         return new HighStreamBuilder<>(streamProperty,
                                        applicationId,
@@ -73,7 +73,7 @@ public final class HighStreamBuilder<INK, INV, OUTK, OUTV> {
         return this;
     }
 
-    public HighStream<INK, INV, OUTK, OUTV> build() {
+    public HighStream<INK, INV> build() {
         return new HighStreamImpl<>(properties, outKeySerde, outValueSerde, topic, applicationId);
     }
 }

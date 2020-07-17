@@ -4,7 +4,6 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Properties;
 import java.util.function.Consumer;
 
-import lee.high.stream.errors.StreamDeserializationExceptionHandler;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -13,31 +12,23 @@ import org.apache.kafka.streams.kstream.KStream;
 
 import lee.high.stream.HighStream;
 import lee.high.stream.HighWindowStore;
-import lee.high.stream.HighWindowSuppressed;
 import lee.high.stream.model.KafkaStreamsOperation;
-import lee.high.stream.HighMaterialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class HighStreamImpl<INK, INV, OUTK, OUTV> implements HighStream<INK, INV, OUTK, OUTV> {
+public final class HighStreamImpl<INK, INV> implements HighStream<INK, INV> {
     private static final Logger log = LoggerFactory.getLogger(HighStream.class);
 
     private final Properties properties;
-    private final Serde<OUTK> outKeySerde;
-    private final Serde<OUTV> outValueSerde;
     private final String topic;
     private final String applicationId;
     private KafkaStreams kafkaStreams;
 
     public HighStreamImpl(final Properties properties,
-                          final Serde<OUTK> outKeySerde,
-                          final Serde<OUTV> outValueSerde,
                           final String topic,
                           final String applicationId) {
         this.topic = topic;
         this.properties = properties;
-        this.outKeySerde = outKeySerde;
-        this.outValueSerde = outValueSerde;
         this.applicationId = applicationId;
     }
 
@@ -73,15 +64,5 @@ public final class HighStreamImpl<INK, INV, OUTK, OUTV> implements HighStream<IN
     @Override
     public HighWindowStore store() {
         return new HighWindowStoreImpl(topic, applicationId);
-    }
-
-    @Override
-    public HighWindowSuppressed suppressed() {
-        return new HighWindowSuppressedImpl(topic, applicationId);
-    }
-
-    @Override
-    public HighMaterialized<OUTK, OUTV> materialized() {
-        return new HighMaterializedImpl<>(outKeySerde, outValueSerde);
     }
 }

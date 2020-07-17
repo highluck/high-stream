@@ -7,7 +7,7 @@ import org.apache.kafka.streams.kstream.KStream;
 
 import lee.high.stream.model.KafkaStreamsOperation;
 
-public interface HighStream<INK, INV, OUTK, OUTV> {
+public interface HighStream<INK, INV> {
     KafkaStreamsOperation streams(final Consumer<KStream<INK, INV>> stream);
 
     KafkaStreamsOperation streams(final Consumer<KStream<INK, INV>> stream,
@@ -16,8 +16,4 @@ public interface HighStream<INK, INV, OUTK, OUTV> {
     String topic();
 
     HighWindowStore store();
-
-    HighWindowSuppressed suppressed();
-
-    HighMaterialized<OUTK, OUTV> materialized();
 }

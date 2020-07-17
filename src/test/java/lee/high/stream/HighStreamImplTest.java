@@ -1,6 +1,5 @@
 package lee.high.stream;
 
-import com.google.common.collect.Lists;
 import lee.high.stream.model.KafkaStreamsOperation;
 import lee.high.stream.model.KeyValueSerde;
 import lee.high.stream.model.StreamProperty;
@@ -8,11 +7,11 @@ import lee.high.stream.serializers.KafkaSerializer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.SessionWindows;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -24,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 public class HighStreamImplTest {
     private static final Pattern COMPILE = Pattern.compile("PLAINTEXT://", Pattern.LITERAL);
-    private final HighStream<Long, TestModel, Long, TestModel> highStream;
+    private final HighStream<Long, TestModel> highStream;
     private final KafkaProducer<Long, TestModel> kafkaProducer;
     private final String topic = "test-top7";
 //    @ClassRule
@@ -62,7 +61,6 @@ public class HighStreamImplTest {
     public void 테스트() {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         final HighWindowStore store = highStream.store();
-        final HighWindowSuppressed suppressed = highStream.suppressed();
 
         final Consumer<KStream<Long, TestModel>> streamKStream =
                 stream -> stream
@@ -71,17 +69,16 @@ public class HighStreamImplTest {
                         .windowedBy(SessionWindows.with(Duration.ofSeconds(5000))
                                 .grace(Duration.ofSeconds(5000)))
                         .reduce((v1, v2) -> v2,
-                                highStream.materialized()
-                                        .as(store.inMemorySessionStore(Duration.ofSeconds(5000)))
+                                Materialized.as(store.inMemorySessionStore(Duration.ofSeconds(5000))
                                         .withLoggingDisabled())
 
 //                        .aggregate(TestModel::new,
 //                                (key, value, aggregate) -> {
-////                                    System.out.println("xxxxxx" + value);
+//                                    System.out.println("xxxxxx" + value);
 //                                    return aggregate;
 //                                },
 //                                (key, aggOne, aggTwo) -> {
-////                                    System.out.println("xxxxxx" + aggTwo.getValue());
+//                                    System.out.println("xxxxxx" + aggTwo.getValue());
 //                                    return aggOne;
 //                                },
 //                                highStream.materialized()
