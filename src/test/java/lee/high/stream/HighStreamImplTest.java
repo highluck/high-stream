@@ -69,8 +69,8 @@ public class HighStreamImplTest {
                         .windowedBy(SessionWindows.with(Duration.ofSeconds(5000))
                                 .grace(Duration.ofSeconds(5000)))
                         .reduce((v1, v2) -> v2,
-                                Materialized.as(store.inMemorySessionStore(Duration.ofSeconds(5000))
-                                        .withLoggingDisabled())
+                                Materialized.as(store.inMemorySessionStore(Duration.ofSeconds(5000)))
+                        )
 
 //                        .aggregate(TestModel::new,
 //                                (key, value, aggregate) -> {
