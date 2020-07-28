@@ -4,6 +4,9 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Properties;
 import java.util.function.Consumer;
 
+import lee.high.stream.HighStreamBuilder;
+import lee.high.stream.model.KeyValueSerde;
+import lee.high.stream.model.StreamProperty;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -30,6 +33,20 @@ public final class HighStreamImpl<INK, INV> implements HighStream<INK, INV> {
         this.topic = topic;
         this.properties = properties;
         this.applicationId = applicationId;
+    }
+
+    public static <INK, INV> HighStreamBuilder<INK, INV> builder(
+            final StreamProperty streamProperty,
+            final String applicationId,
+            final long commitIntervalMs,
+            final KeyValueSerde<INK, INV> inKeyValueSerde,
+
+            final String topic) {
+        return new HighStreamBuilder<>(streamProperty,
+                applicationId,
+                commitIntervalMs,
+                inKeyValueSerde,
+                topic);
     }
 
     @Override

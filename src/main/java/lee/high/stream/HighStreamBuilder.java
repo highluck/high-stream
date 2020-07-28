@@ -3,7 +3,6 @@ package lee.high.stream;
 import java.util.Properties;
 
 import lee.high.stream.serializers.KafkaSerde;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DeserializationExceptionHandler;
 
@@ -11,25 +10,20 @@ import lee.high.stream.internal.HighStreamImpl;
 import lee.high.stream.model.KeyValueSerde;
 import lee.high.stream.model.StreamProperty;
 
-public final class HighStreamBuilder<INK, INV, OUTK, OUTV> {
+public final class HighStreamBuilder<INK, INV> {
     private final Properties properties;
-    private final Serde<OUTK> outKeySerde;
-    private final Serde<OUTV> outValueSerde;
     private final String topic;
     private final String applicationId;
     private static Class keyClass;
     private static Class valueClass;
 
-    private HighStreamBuilder(final StreamProperty streamProperty,
-                              final String applicationId,
-                              final long commitIntervalMs,
-                              final KeyValueSerde<INK, INV> inKeyValueSerde,
-                              final KeyValueSerde<OUTK, OUTV> outKeyValueSerde,
-                              final String topic) {
+    public HighStreamBuilder(final StreamProperty streamProperty,
+                             final String applicationId,
+                             final long commitIntervalMs,
+                             final KeyValueSerde<INK, INV> inKeyValueSerde,
+                             final String topic) {
         this.applicationId = applicationId;
         this.topic = topic;
-        outKeySerde = outKeyValueSerde.keySerde();
-        outValueSerde = outKeyValueSerde.valueSerde();
         properties = streamProperty.toProperty();
         keyClass = inKeyValueSerde.keyClass();
         valueClass = inKeyValueSerde.valueClass();
@@ -51,22 +45,7 @@ public final class HighStreamBuilder<INK, INV, OUTK, OUTV> {
         }
     }
 
-    public static <INK, INV, OUTK, OUTV> HighStreamBuilder<INK, INV, OUTK, OUTV> of(
-            final StreamProperty streamProperty,
-            final String applicationId,
-            final long commitIntervalMs,
-            final KeyValueSerde<INK, INV> inKeyValueSerde,
-            final KeyValueSerde<OUTK, OUTV> outKeyValueSerde,
-            final String topic) {
-        return new HighStreamBuilder<>(streamProperty,
-                                       applicationId,
-                                       commitIntervalMs,
-                                       inKeyValueSerde,
-                                       outKeyValueSerde,
-                                       topic);
-    }
-
-    public HighStreamBuilder<INK, INV, OUTK, OUTV> setDeserializationExceptionHandler(
+    public HighStreamBuilder<INK, INV> setDeserializationExceptionHandler(
             final Class<DeserializationExceptionHandler> deserializationExceptionHandler) {
         properties.setProperty(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
                                deserializationExceptionHandler.getName());
@@ -74,6 +53,6 @@ public final class HighStreamBuilder<INK, INV, OUTK, OUTV> {
     }
 
     public HighStream<INK, INV> build() {
-        return new HighStreamImpl<>(properties, outKeySerde, outValueSerde, topic, applicationId);
+        return new HighStreamImpl<>(properties, topic, applicationId);
     }
 }
