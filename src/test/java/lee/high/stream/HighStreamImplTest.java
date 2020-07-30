@@ -1,5 +1,6 @@
 package lee.high.stream;
 
+import lee.high.stream.internal.HighStreamImpl;
 import lee.high.stream.model.KafkaStreamsOperation;
 import lee.high.stream.model.KeyValueSerde;
 import lee.high.stream.model.StreamProperty;
@@ -48,10 +49,9 @@ public class HighStreamImplTest {
                 10,
                 1);
 
-        highStream = HighStreamBuilder.of(streamProperty,
+        highStream = HighStreamImpl.builder(streamProperty,
                 "test6",
                 2000,
-                KeyValueSerde.of(Long.class, TestModel.class),
                 KeyValueSerde.of(Long.class, TestModel.class),
                 topic)
                 .build();
